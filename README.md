@@ -1,240 +1,382 @@
-# R1-V: Reinforcing Super Generalization Ability in Vision Language Models with Less Than $3
+# Fine-tuning Qwen2-VL Series
 
-![image](https://github.com/user-attachments/assets/c52a448f-d666-4ca6-958b-86267d56de0e) 
+This repository contains a script for training [Qwen2-VL](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct) and [Qwen2.5-VL](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct) with only using HuggingFace and [Liger-Kernel](https://github.com/linkedin/Liger-Kernel).
 
-<p align="center">
-<a href="https://github.com/Deep-Agent/R1-V/releases"><img alt="GitHub release" src="https://img.shields.io/github/release/Deep-Agent/R1-V.svg"></a>
-</p>
+## Notification
 
-> ### Roadmap for R1-V
-> We are building a general framework for RLVR in VLM. We believe in the power of **trenches** and **longtermism**.
->
-> Our Interest: General Vision-Language Intelligence & Visual/GUI Agent
-> 
-> Our Goal: 🔄 Algorithm Enhancement ⚡ Efficiency Optimization 🎯 Task Diversity 🌲 Impactful Open Source Research. 
->
-> Welcome Ideas and Contribution. Stay tuned!
+**Currently Qwen2.5-VL has a bug when using Flash-attention2. ~~You need to disable to train the model.~~**<br>
+**I made a quick fix monkey-patching code for it.**
 
+## Other projects
 
-**Blogs:**
+**[[Phi3-Vision Finetuning]](https://github.com/2U1/Phi3-Vision-Finetune)**<br>
+**[[Llama3.2-Vision Finetuning]](https://github.com/2U1/Llama3.2-Vision-Ft)**<br>
+**[[Molmo Finetune]](https://github.com/2U1/Molmo-Finetune)**<br>
+**[[Pixtral Finetune]](https://github.com/2U1/Pixtral-Finetune)**<br>
+**[[SmolVLM Finetune]](https://github.com/2U1/SmolVLM-Finetune)**
 
+## Update
 
-[🎯 RLVR in Vision Language Models: Findings, Questions and Directions](https://deepagent.notion.site/rlvr-in-vlms)
+- [2025/03/04] Add Option for using liger kernel.
+- [2025/02/18] 🔥Support mixed-modality dataset with zero3.
+- [2025/02/05] Fixed code for properly use image.
+- [2025/02/03] Support Liger-kernel for Qwen2.5-VL.
+- [2025/02/03] 🔥Supports Qwen2.5-VL.
+- [2025/01/24] Add option for using DoRA.
+- [2025/01/24] Fix error in LoRA training.
+- [2025/01/18] 🔥Supports mixed-modality data.
+- [2025/01/11] Updated 8-bit training with ms_amp fp8 with opt_level O3.
+- [2024/11/05] Add memory efficient 8-bit training.
+- [2024/09/12] 🔥Now the model is trained using [Liger-Kernel](https://github.com/linkedin/Liger-Kernel).
+- [2024/09/11] Supports setting different learning rates to projector and vision model.
+- [2024/09/11] 🔥Supports multi-image and video training.
 
-**Resources:** 
+## Table of Contents
 
-[🤗 R1V Training Dataset: CLEVR-70k-Counting](https://huggingface.co/datasets/leonardPKU/clevr_cogen_a_train)
+- [Fine-tuning Qwen2-VL Series](#fine-tuning-qwen2-vl-series)
+  - [Notification](#notification)
+  - [Other projects](#other-projects)
+  - [Update](#update)
+  - [Table of Contents](#table-of-contents)
+  - [Supported Features](#supported-features)
+  - [Installation](#installation)
+    - [Using `environment.yaml`](#using-environmentyaml)
+  - [Dataset Preparation](#dataset-preparation)
+  - [Training](#training)
+    - [Full Finetuning](#full-finetuning)
+    - [Full Finetuning with 8-bit](#full-finetuning-with-8-bit)
+    - [Finetune with LoRA](#finetune-with-lora)
+    - [Train with video dataset](#train-with-video-dataset)
+      - [Merge LoRA Weights](#merge-lora-weights)
+      - [Image Resolution for performance boost](#image-resolution-for-performance-boost)
+      - [Issue for libcudnn error](#issue-for-libcudnn-error)
+  - [Inference](#inference)
+    - [Gradio Infernce (WebUI)](#gradio-infernce-webui)
+  - [TODO](#todo)
+  - [Known Issues](#known-issues)
+  - [License](#license)
+  - [Citation](#citation)
+  - [Acknowledgement](#acknowledgement)
 
-[🤗 R1V Training Dataset: CLEVR-70k-Complex](https://huggingface.co/datasets/MMInstruction/Clevr_CoGenT_TrainA_70K_Complex)
+## Supported Features
 
-[🤗 R1V Training Dataset: GEOQA-8k](https://huggingface.co/datasets/leonardPKU/GEOQA_R1V_Train_8K)
+- Deepspeed
+- LoRA/QLoRA
+- Full-finetuning
+- Enable finetuning `vision_model` while using LoRA.
+- Disable/enable Flash Attention 2
+- Multi-image and video training
+- Training optimized with liger kernel
 
-[🤗 R1-Distilled Visual Reasoning Dataset](https://huggingface.co/datasets/MMInstruction/Clevr_CoGenT_TrainA_R1)
+## Installation
 
-**R1-V Team:** 
+Install the required packages using `environment.yaml`.
 
-[Liang Chen](https://github.com/chenllliang) · [Lei Li](https://lilei-nlp.github.io) · [Haozhe Zhao](https://haozhezhao.github.io/) · [Yifan Song](https://github.com/Yifan-Song793) · [Vinci](https://github.com/0xvincii) · [Zihao Yue](https://yuezih.github.io/) 
-
-**Contributors**:
-
-<a href="https://github.com/Deep-Agent/R1-V/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Deep-Agent/R1-V&max=30" />
-</a>
-
-
-
----
-
-### Updates
-
-- 2025-02-27: vLLM trainer supports Qwen2.5-VL now, refer to `./src/scripts/run_grpo_vllm_qwen25vl.sh` for script and env update.
-- 2025-02-21: We write a [blog post](https://deepagent.notion.site/rlvr-in-vlms) summarizing the main findings and questions in our visual RLVR experimetns, check it out!
-- 2025-02-12: We fixed the batched decoding error. The orignial RL training scirpt now is 3x speeded up.
-- 2025-02-12: R1-V now supports vLLM to accelerate training (`pip install vllm==0.7.2` before use) and SFT.
-- 2025-02-11: R1-V now supports Qwen2.5-VL and [GEOQA](https://arxiv.org/abs/2312.11370) task.
-- 2025-02-06: We upload the evaluation script and polish the README. We are writing a blog post summarizing the statistics, findings and underexplored questions. 
-- 2025-02-03: We upload the training codebase.
-- 2025-02-03: We curate and upload some verified Deepseek-R1 visual reasoning traces with some special tricks (see `R1-V/src/distill_r1/`). Current training code does not rely on it, feel free to explore.
-- 2025-02-03: We release the R1-V repo.
-
-
-### For contributors
-- Our top development priority is addressing the issues marked with `help wanted` labels, and we welcome ideas/PRs from the community to help solve them.
-
----
-
-![Image](https://github.com/user-attachments/assets/e86a3ff2-a9c6-4548-8200-6c3c382d60e6)
-
-![Image](https://github.com/user-attachments/assets/b3512920-ef30-4d6d-9bfe-c64e4570a067)
-*Note: In our later experiment, we found that letting the 2b base model directly output the result instead of following `<think></think><answer></answer>` would lead to a much higher score (86%) on SuperClevr. It suggests that enforcing Chain-of-Thought reasoning may be not only unnecessary but potentially detrimental to the 2B model performance.*
-
-![image](https://github.com/user-attachments/assets/f5191b1e-dde2-42b7-9ec9-10f7f6213c12)
-
-
-## Setup
+### Using `environment.yaml`
 
 ```bash
-conda create -n r1-v python=3.11 
-conda activate r1-v
-
-bash setup.sh
+conda env create -f environment.yaml
+conda activate qwen2
+pip install qwen-vl-utils
+pip install flash-attn==2.5.8 --no-build-isolation
 ```
 
-> [!NOTE] 
-> If you meet bug when running the script, first try align your environments with `./src/requirements.txt`
+Please install the transformers from git to finetune Qwen2.5-VL.<br>
+This code is based on the commit version below, **not the latest version**.
 
+```
+pip install git+https://github.com/huggingface/transformers.git@9d2056f12b66e64978f78a2dcb023f65b2be2108 accelerate
+```
 
-### Supported Models
+**Note:** You should install flash-attn after installing the other packages.
 
-1. Qwen2-VL
-2. Qwen2.5-VL 
+## Dataset Preparation
 
-### Supported Training Datasets
+The script requires a dataset formatted according to the LLaVA specification. The dataset should be a JSON file where each entry contains information about conversations and images. Ensure that the image paths in the dataset match the provided `--image_folder`.<br>
 
-1. [🤗 R1V Training Dataset: CLEVR-70k-Counting](https://huggingface.co/datasets/leonardPKU/clevr_cogen_a_train): Item Counting Problems
+**When using a multi-image dataset, the image tokens should all be `<image>`, and the image file names should have been in a list.**<br><br>
+**Please see the example below and follow format your data.**
 
-2. [🤗 R1V Training Dataset: CLEVR-70k-Complex](https://huggingface.co/datasets/MMInstruction/Clevr_CoGenT_TrainA_70K_Complex): Number Related Reasoning 
+<details>
+<summary>Example for single image dataset</summary>
 
-3. [🤗 R1V Training Dataset: GEOQA-8k](https://huggingface.co/datasets/leonardPKU/GEOQA_R1V_Train_8K): Geometry Reasoning
+```json
+[
+  {
+    "id": "000000033471",
+    "image": "000000033471.jpg",
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\nWhat are the colors of the bus in the image?"
+      },
+      {
+        "from": "gpt",
+        "value": "The bus in the image is white and red."
+      },
+      {
+        "from": "human",
+        "value": "What feature can be seen on the back of the bus?"
+      },
+      {
+        "from": "gpt",
+        "value": "The back of the bus features an advertisement."
+      },
+      {
+        "from": "human",
+        "value": "Is the bus driving down the street or pulled off to the side?"
+      },
+      {
+        "from": "gpt",
+        "value": "The bus is driving down the street, which is crowded with people and other vehicles."
+      }
+    ]
+  }
+  ...
+]
+```
 
+</details>
 
-### Supported Evaluations
+<details>
+<summary>Example for multi image dataset</summary>
 
-1. [SuperClevr-200](https://github.com/Deep-Agent/R1-V?tab=readme-ov-file#superclevr): Item Counting Problems
-2. [GeoQA-Test-Direct-Answer-735](https://github.com/Deep-Agent/R1-V?tab=readme-ov-file#geoqa): Geometry Reasoning
+```json
+[
+  {
+    "id": "000000033471",
+    "image": ["000000033471.jpg", "000000033472.jpg"],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n<image>\nIs the perspective of the camera differnt?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes, It the perspective of the camera is different."
+      }
+    ]
+  }
+  ...
+]
+```
+
+</details>
+
+<details>
+<summary>Example for video dataset</summary>
+
+```json
+[
+  {
+    "id": "sample1",
+    "video": "sample1.mp4",
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWhat is going on in this video?"
+      },
+      {
+        "from": "gpt",
+        "value": "A man is walking down the road."
+      }
+    ]
+  }
+  ...
+]
+```
+
+</details>
+<br><br>
+
+Adding the new domain-specific data on top of the general data from open-source data will enhance downstream capabilities while retaining the foundational skills. Of course, you can also choose to fine-tune solely on the new data based on your requirements.
 
 ## Training
 
-### GRPO
+**Note:** Deepspeed zero2 is faster than zero3, however it consumes more memory. Also, most of the time zero2 is more stable than zero3.<br><br>
+**Tip:** You could use `adamw_bnb_8bit` for optimizer to save memory.
+
+To run the training script, use the following command:
+
+### Full Finetuning
 
 ```bash
-cd src/r1-v
-
-export DEBUG_MODE="true" # Enable Debug if you want to see the rollout of model during RL
-export LOG_PATH="./debug_log_2b.txt"
-
-torchrun --nproc_per_node="8" \
-    --nnodes="1" \
-    --node_rank="0" \
-    --master_addr="127.0.0.1" \
-    --master_port="12345" \
-    src/open_r1/grpo.py \
-    --output_dir <OUTPUT_DIR> \
-    --model_name_or_path <PATH-TO-Qwen2-VL-2B-Instruct> \ 
-    --dataset_name leonardPKU/clevr_cogen_a_train \  
-    --deepspeed local_scripts/zero3.json \
-    --max_prompt_length 512 \
-    --max_completion_length 512 \
-    --per_device_train_batch_size 1 \
-    --gradient_accumulation_steps 2 \
-    --logging_steps 1 \
-    --bf16 \
-    --report_to wandb \
-    --gradient_checkpointing false \
-    --attn_implementation flash_attention_2 \
-    --max_pixels 401408 \
-    --num_train_epochs 2 \
-    --run_name Qwen2-VL-2B-GRPO-CLEVR-70k \
-    --save_steps 100 \
-    --save_only_model true \
-    --num_generations 8   # number of outputs G in grpo, reduce it would lead to faster training and smaller memory cost but higher variance  
-
+bash scripts/finetune.sh
 ```
 
-> [!NOTE] 
-> 1. To reproduce the result, keep the per_device_train_batch_size to 1 for now, as there is a revealed bug about batched training. See the [reproduction report](https://github.com/Deep-Agent/R1-V/issues/4#issuecomment-2633348354) here. We realize it is important for effiency and are working on solving it with the community.
-> 2. If you meet **OOM Error**, you can try reduce `--num_generations`
-> 3. To use vLLM to speed up, please refer to this [script](https://github.com/Deep-Agent/R1-V/blob/main/src/scripts/run_grpo_vllm.sh).
-
-
-### SFT
-
-We also provide SFT code, please follow the script and edit the config to customize the sft task.
+### Full Finetuning with 8-bit
 
 ```bash
-accelerate launch --config_file src/r1-v/configs/zero2.yaml src/r1-v/src/open_r1/sft.py --config src/r1-v/configs/qwen2vl_sft_config.yaml 
+bash scripts/finetune_8bit.sh
 ```
 
-## Evaluation
+**You need to install [ms-amp](https://github.com/Azure/MS-AMP) to use this script.**<br>
+This script will finetune the model with fp8 model dtype. If you run out of vram, you could use this.<br>
+You can even use offloading with fp8 training. For detailed config, you could change the deepspeed config files.
 
+### Finetune with LoRA
 
-### SuperCLEVR
-
-![image](https://github.com/user-attachments/assets/4f48233c-0546-432f-94e6-723f91fbd086)
-
-We provide the example script to evaluate OOD counting performance on a subset of SuperCLEVR within 1 minute. You can also modify the script and dataset to test on your own dataset.
-
-
+**Note:** Liger-kernel won't work with QLoRA. You need to disable to use QLoRA.<br>
+If you want to train only the language model with LoRA and perform full training for the vision model:
 
 ```bash
-cd ./src/eval
-wget https://www.cs.jhu.edu/~zhuowan/zhuowan/SuperCLEVR/to_be_released/images.zip
-unzip images.zip
-
-# change the model path in the script
-python test_qwen2vl_counting_superclevr.py 
-
-# tested scores: 
-# Qwen2VL-2B-Instruct: 48.0%
-# Qwen2VL-2B-Instruct-GRPO-100step: 82.5%
+bash scripts/finetune_lora.sh
 ```
 
-### GEOQA
-
-<img width="379" alt="截屏2025-02-11 13 38 50" src="https://github.com/user-attachments/assets/0282872d-bfe5-40fa-ac00-8986450a0b1e" />
-<img width="379" alt="截屏2025-02-11 14 54 16" src="https://github.com/user-attachments/assets/053ebb99-5f19-4599-be51-a7c335ab2b8b" />
-
-
-
-We provide the example script to evaluate on the test set (direct answer form) of [GEOQA](https://arxiv.org/abs/2312.11370).
-
+If you want to train both the language model and the vision model with LoRA:
 
 ```bash
-# prepare images for testing
-cd ./src/eval
-git lfs install
-git clone https://huggingface.co/datasets/Luckyjhg/Geo170K
-cd Geo170K
-unzip images.zip
-
-
-# Evaluation Script
-python test_qwen2vl_geoqa.py
-
-# tested scores: 
-# Qwen2VL-7B-Instruct: 30.63%
-# Qwen2VL-7B-Instruct-GRPO-2epochs: 38.72%
-
-# Qwen2.5VL-3B-Instruct: 35.41%
-# Qwen2.5VL-3B-Instruct-GRPO-1epochs: 47.48%
+bash scripts/finetune_lora_vision.sh
 ```
 
-To enable faster inference with multiple GPUs, you could also use the script in `R1-V/src/scripts/test_grpo_geoqa_multigpu.sh`
+**IMPORTANT:** If you want to tune the `embed_token` with LoRA, You need to tune `lm_head` together.
+
+<details>
+<summary>Training arguments</summary>
+
+- `--deepspeed` (str): Path to DeepSpeed config file (default: "scripts/zero2.json").
+- `--data_path` (str): Path to the LLaVA formatted training data (a JSON file). **(Required)**
+- `--image_folder` (str): Path to the images folder as referenced in the LLaVA formatted training data. **(Required)**
+- `--model_id` (str): Path to the Qwen2-VL model. **(Required)**
+- `--use_liger` (bool): Option for using liger kernel to save memory.
+- `--output_dir` (str): Output directory for model checkpoints
+- `--num_train_epochs` (int): Number of training epochs (default: 1).
+- `--per_device_train_batch_size` (int): Training batch size per GPU per forwarding step.
+- `--gradient_accumulation_steps` (int): Gradient accumulation steps (default: 4).
+- `--freeze_vision_tower` (bool): Option to freeze vision_model (default: False).
+- `--freeze_llm` (bool): Option to freeze LLM (default: False).
+- `--tune_merger` (bool): Option to tune projector (default: True).
+- `--num_lora_modules` (int): Number of target modules to add LoRA (-1 means all layers).
+- `--vision_lr` (float): Learning rate for vision_model.
+- `--merger_lr` (float): Learning rate for merger(projector).
+- `--learning_rate` (float): Learning rate for language module.
+- `--bf16` (bool): Option for using bfloat16.
+- `--fp16` (bool): Option for using fp16.
+- `--image_min_pixels` (int): Option for minimum input tokens for image.
+- `--image_max_pixles` (int): Option for maximum maxmimum tokens for image.
+- `--video_min_pixels` (int): Option for minimum input tokens for video.
+- `--video_max_pixles` (int): Option for maximum maxmimum tokens for video.
+- `--lora_enable` (bool): Option for using LoRA.
+- `--vision_lora` (bool): Option for including `vision_tower` in LoRA module. `lora_enable` should be `True` to use this option.
+- `--use_dora` (bool): Option for using DoRA instead of LoRA. `lora_enable` should be `True` to use this option.
+- `--lora_namespan_exclude` (str): Exclude modules with namespans to add LoRA.
+- `--max_seq_length` (int): Maximum sequence length (default: 32K).
+- `--bits` (int): Quantization bits (default: 16).
+- `--disable_flash_attn2` (bool): Disable Flash Attention 2.
+- `--report_to` (str): Reporting tool (choices: 'tensorboard', 'wandb', 'none') (default: 'tensorboard').
+- `--logging_dir` (str): Logging directory (default: "./tf-logs").
+- `--lora_rank` (int): LoRA rank (default: 128).
+- `--lora_alpha` (int): LoRA alpha (default: 256).
+- `--lora_dropout` (float): LoRA dropout (default: 0.05).
+- `--logging_steps` (int): Logging steps (default: 1).
+- `--dataloader_num_workers` (int): Number of data loader workers (default: 4).
+
+**Note:** The learning rate of `vision_model` should be 10x ~ 5x smaller than the `language_model`.
+
+</details>
+
+### Train with video dataset
+
+You can train the model using a video dataset. You can set LoRA configs and use for LoRA too.<br>
+
+```bash
+bash scripts/finetune_video.sh
 ```
-bash src/scripts/test_grpo_geoqa_multigpu.sh
+
+**Note:** When training with video, it just as multi-image so you should adjust the `max_pixels` for maximum resolution and `fps` based on the available VRAM.
+
+If you run out of vram, you can use [zero3_offload](./scripts/zero3_offload.json) instead of [zero3](./scripts/zero3_offload.json).<br>
+You could use [zero2_offload](./scripts/zero2_offload.json) for a bit faster training.
+
+#### Merge LoRA Weights
+
+```
+bash scripts/merge_lora.sh
 ```
 
+**Note:** Remember to replace the paths in `finetune.sh` or `finetune_lora.sh` with your specific paths. (Also in `merge_lora.sh` when using LoRA.)
 
+#### Image Resolution for performance boost
 
-## Acknowledgements
+The model supprots a wide range of resolution inputs. By default, it uses the native resolution for input.
+For better performance using native or higer pixel numbers are recommended, however it takes too much memory and computation time for large images. So you could adjust the pixel numbers for it.
+The model splits the image into `token * 28 * 28` so you could just change the the token_num part in the script. <br>
+For example:
 
-We sincerely thank [DeepSeek](https://github.com/deepseek-ai/DeepSeek-R1), [Open-R1](https://github.com/huggingface/open-r1), [QwenVL](https://github.com/QwenLM/Qwen2.5-VL), [Open-R1-Multimodal](https://github.com/EvolvingLMMs-Lab/open-r1-multimodal) (our initial codebase), [CLEVR](https://cs.stanford.edu/people/jcjohns/clevr/), [SuperCLEVR](https://github.com/Lizw14/Super-CLEVR), [G-LLAVA](https://arxiv.org/abs/2312.11370) for providing open source resources and to build the project. Special thanks to [Kimi](https://kimi.moonshot.cn/), [bAInance Labs](https://bainancelabs.com/) for supporting computation resources and [Yuxin Wu](https://scholar.google.com/citations?user=mJQI-gUAAAAJ&hl=en), [Xinyu Zhou](https://scholar.google.com/citations?user=Jv4LCj8AAAAJ&hl=en), [Baobao Chang](https://scholar.google.com.au/citations?user=LaKNyhQAAAAJ&hl=en) for their valuable advice.
+```
+image_min_pixels = 256 * 28 * 28
+image_max_pixels = 1280 * 28 * 28
+video_min_pixels = 128 * 28 * 28
+video_max_pixels = 768 * 28 * 28
+```
 
+#### Issue for libcudnn error
 
+```
+Could not load library libcudnn_cnn_train.so.8. Error: /usr/local/cuda-12.1/lib/libcudnn_cnn_train.so.8: undefined symbol: _ZN5cudnn3cnn34layerNormFwd_execute_internal_implERKNS_7backend11VariantPackEP11CUstream_stRNS0_18LayerNormFwdParamsERKNS1_20NormForwardOperationEmb, version libcudnn_cnn_infer.so.8
+```
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Deep-Agent/R1-V&type=Timeline)](https://star-history.com/#Deep-Agent/R1-V&Timeline)
+You could run `unset LD_LIBRARY_PATH` for this error.
+You could see this [issue](https://github.com/andimarafioti/florence2-finetuning/issues/2)
+
+## Inference
+
+**Note:** You should use the merged weight when trained with LoRA.
+
+### Gradio Infernce (WebUI)
+
+1. Install gradio
+
+```
+pip install gradio
+```
+
+2. Launch app
+
+```
+python -m src.serve.app \
+    --model-path /path/to/merged/weight
+```
+
+You can launch gradio based demo with this command. This can also set some other generation configs like `repetition_penalty`, `temperature` etc.
+
+## TODO
+
+- [x] Support for video data
+- [x] Add demo for multi-image and video
+- [x] Handle mixed-modality data in dataset and collator
+- [x] Support Qwen2.5-VL
+- [x] Monkey-patch liger-kernel for Qwen2.5-VL
+- [ ] Update the code base to the latest transformers.
+- [ ] Benchmark torchtune to speed up and save memory when training.
+
+## Known Issues
+
+- [libcudnn issue](#issue-for-libcudnn-error)
+
+## License
+
+This project is licensed under the Apache-2.0 License. See the [LICENSE](LICENSE) file for details.
 
 ## Citation
 
-```bib
-@misc{chen2025r1v,
-  author       = {Chen, Liang and Li, Lei and Zhao, Haozhe and Song, Yifan and Vinci},
-  title        = {R1-V: Reinforcing Super Generalization Ability in Vision-Language Models with Less Than \$3},
-  howpublished = {\url{https://github.com/Deep-Agent/R1-V}},
-  note         = {Accessed: 2025-02-02},
-  year         = {2025}
+If you find this repository useful in your project, please consider giving a :star: and citing:
+
+```bibtex
+@misc{Qwen2-VL-Finetuning,
+  author = {Yuwon Lee},
+  title = {Qwen2-VL-Finetune},
+  year = {2024},
+  publisher = {GitHub},
+  url = {https://github.com/2U1/Qwen2-VL-Finetune}
 }
 ```
 
+## Acknowledgement
 
+This project is based on
 
+- [LLaVA-NeXT](https://github.com/LLaVA-VL/LLaVA-NeXT): An amazing open-source project of LMM.
+- [Mipha](https://github.com/zhuyiche/llava-phi): Open-source projcet of SMM with amazing capabilites.
+- [Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct): Awesome pretrained MLLM based on Qwen2.
+- [Liger-Kernel](https://github.com/linkedin/Liger-Kernel): Collection of Tirton kernels designed specifically for LLM training.
