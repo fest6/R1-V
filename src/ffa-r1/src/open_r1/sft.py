@@ -291,7 +291,7 @@ def main(script_args, training_args, model_args):
     # Save everything else on main process
     kwargs = {
         "dataset_name": script_args.dataset_name,
-        "tags": ["R1-V"],
+        "tags": ["FFA-R1"],
     }
     if trainer.accelerator.is_main_process:
         trainer.create_model_card(**kwargs)

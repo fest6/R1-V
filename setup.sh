@@ -1,5 +1,5 @@
-# Install the packages in r1-v .
-cd src/r1-v 
+# Install the packages in ffa-r1 .
+cd src/ffa-r1 
 pip install -e ".[dev]"
 
 # Addtional modules

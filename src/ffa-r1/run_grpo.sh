@@ -1,4 +1,4 @@
-cd src/r1-v
+cd src/ffa-r1
 
 export DEBUG_MODE="true"
 export LOG_PATH="./debug_log_2b.txt"

@@ -106,12 +106,12 @@ install_requires = [
 ]
 
 setup(
-    name="r1-v",
+    name="ffa-r1",
     version="0.1.0",  # expected format is one of x.y.z.dev0, or x.y.z.rc1 or x.y.z (no to dashes, yes to dots)
-    author="The r1-v team and the Hugging Face team (past and future)",
-    description="R1-V",
+    author="The ffa-r1 team and the Hugging Face team (past and future)",
+    description="FFA-R1",
     license="Apache",
-    url="https://github.com/Deep-Agent/R1-V",
+    url="",
     package_dir={"": "src"},
     packages=find_packages("src"),
     zip_safe=False,
